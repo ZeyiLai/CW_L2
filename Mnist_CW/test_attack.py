@@ -95,7 +95,7 @@ def show(imgs, pert_imgs, ground_truth, predicts ,device):
     plt.tight_layout()  # 自动调整布局避免重叠
     plt.show()
 
-def attacking(model, data, iters, device, c, max_iter):
+def attacking(model, data, iters, device):
     """
     执行对抗攻击并收集成功攻击的样本。
 
@@ -111,23 +111,28 @@ def attacking(model, data, iters, device, c, max_iter):
     predicts = []
 
     # 遍历数据集，执行对抗攻击
-    for idx in tqdm(range(iters), desc="Getting Ready", ncols=100):
-
-        if(predict(model, inputs[idx].to(device)) != ground_truth[idx]):
+    prt = False
+    cnt = 0
+    for idx in range(len(inputs)):
+        if not prt:
+            print("getting img: ",cnt + 1,' out of ',iters)
+            prt = True
+        if predict(model, inputs[idx].to(device)) != ground_truth[idx]:
             continue
         # 初始化CW L2攻击器
-        attacker = CWL2Attack(model, device, False, c, 0, max_iter, 0.01)
-
+        attacker = CWL2Attack(model, device, False, 0.1, 0, 1000, 0.01)
         # 对当前输入图像执行攻击
         adv = attacker.attack(inputs[idx], ground_truth[idx], False)
-
-        result = predict(model, adv)
-
-        if(result != ground_truth[idx]):
+        result = predict(model, adv)        #存下预测的类别，在下面做判断，如果攻击成功，就将所需数据存入
+        if result != ground_truth[idx]:
             imgs.append(inputs[idx])
             pert_imgs.append(adv)
             ground.append(ground_truth[idx])
             predicts.append(result)
+            prt = False
+            cnt += 1
+            if cnt == iters:
+                break
         else:
             continue
 
@@ -145,11 +150,7 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.eval()
     model.to(device)
-    imgs, pert_imgs, ground_truth, predicts = attacking(model, data, 5, device ,0.1, 1000)  # 执行攻击
-    show(imgs, pert_imgs, ground_truth, predicts, device)  # 显示结果
-    imgs, pert_imgs, ground_truth, predicts = attacking(model, data, 5, device ,1, 1000)  # 执行攻击
-    show(imgs, pert_imgs, ground_truth, predicts, device)  # 显示结果
-    imgs, pert_imgs, ground_truth, predicts = attacking(model, data, 5, device ,10, 1000)  # 执行攻击
+    imgs, pert_imgs, ground_truth, predicts = attacking(model, data, 5, device)  # 执行攻击
     show(imgs, pert_imgs, ground_truth, predicts, device)  # 显示结果
 
 if __name__ == '__main__':
