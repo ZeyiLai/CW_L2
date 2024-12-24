@@ -95,7 +95,7 @@ def show(imgs, pert_imgs, ground_truth, predicts ,device):
     plt.tight_layout()  # 自动调整布局避免重叠
     plt.show()
 
-def attacking(model, data, iters, device):
+def attacking(model, data, iters, device, c, max_iter):
     """
     执行对抗攻击并收集成功攻击的样本。
 
@@ -116,7 +116,7 @@ def attacking(model, data, iters, device):
         if(predict(model, inputs[idx].to(device)) != ground_truth[idx]):
             continue
         # 初始化CW L2攻击器
-        attacker = CWL2Attack(model, device, False, 1, 0, 10, 0.01)
+        attacker = CWL2Attack(model, device, False, c, 0, max_iter, 0.01)
 
         # 对当前输入图像执行攻击
         adv = attacker.attack(inputs[idx], ground_truth[idx], False)
@@ -145,7 +145,11 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.eval()
     model.to(device)
-    imgs, pert_imgs, ground_truth, predicts = attacking(model, data, 5, device)  # 执行攻击
+    imgs, pert_imgs, ground_truth, predicts = attacking(model, data, 5, device ,0.1, 1000)  # 执行攻击
+    show(imgs, pert_imgs, ground_truth, predicts, device)  # 显示结果
+    imgs, pert_imgs, ground_truth, predicts = attacking(model, data, 5, device ,1, 1000)  # 执行攻击
+    show(imgs, pert_imgs, ground_truth, predicts, device)  # 显示结果
+    imgs, pert_imgs, ground_truth, predicts = attacking(model, data, 5, device ,10, 1000)  # 执行攻击
     show(imgs, pert_imgs, ground_truth, predicts, device)  # 显示结果
 
 if __name__ == '__main__':
