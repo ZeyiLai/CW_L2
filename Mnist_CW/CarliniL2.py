@@ -47,10 +47,10 @@ class CWL2Attack:
 
         if self.targeted:
             # 定向攻击：优化目标类的输出大于非目标类
-            return torch.clamp((other - real), min=-self.c)
+            return torch.clamp((other - real), min=-self.kappa)
         else:
             # 非定向攻击：优化使得原始类的输出低于其他类
-            return torch.clamp((real - other), min=-self.c)
+            return torch.clamp((real - other), min=-self.kappa)
 
     def attack(self, images, labels, use_tqdm=True):
         """
@@ -84,7 +84,7 @@ class CWL2Attack:
             loss2 = self.f(a, labels).sum()
 
             # 总损失
-            cost = loss1 + loss2
+            cost = loss1 + self.c * loss2
 
             # 优化步骤
             optimizer.zero_grad()
