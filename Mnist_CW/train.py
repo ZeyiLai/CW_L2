@@ -163,7 +163,8 @@ def main():
     """
     save_path = "./models/mnist.pth" # 模型保存路径
     model = MNISTModel() # 初始化模型
-    trainer = MNISTTrainer(model, device="cuda", batch_size=1024, lr=0.001) # 初始化训练器
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    trainer = MNISTTrainer(model, device, batch_size=1024, lr=0.001) # 初始化训练器
     trainer.train(epochs=50) # 训练模型
     trainer.save_model(save_path) # 保存训练好的模型
     trainer.evaluate() # 评估模型性能
