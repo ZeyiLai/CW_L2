@@ -7,17 +7,17 @@ from test_attack import generate_data, predict
 from train import MNISTDataset
 
 
-def evalu(model, inputs, targets, ground_truth):
+def evalu(model, inputs, targets, ground_truth, device):
     model.eval()
     total = len(ground_truth)
     valid_mapping = np.ones((total,2))
-    attacker = CWL2Attack(model, 'cuda', False, 0.1, 0, 1000, 0.01)
+    attacker = CWL2Attack(model, device, False, 1, 0, 100, 0.01)
     success = 0
     idx = 0
     its = 100
     with torch.no_grad():
         for step in tqdm(range(len(ground_truth)), desc="Getting Ready", ncols=100):
-            if predict(model,inputs[step].to('cuda')) != ground_truth[step]:
+            if predict(model,inputs[step].to(device)) != ground_truth[step]:
                 valid_mapping[step][0] = 0
                 valid_mapping[step][1] = 0
     for step in tqdm(range(its), desc="Evaluating", ncols=100):
@@ -30,12 +30,13 @@ def evalu(model, inputs, targets, ground_truth):
     print(success * 100 / its,'%')
 
 def main():
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     data = MNISTDataset()
     model = torch.load('./models/mnist.pth')
     inputs, targets, ground_truth = generate_data(data, len(data.get_test_data()))
     model.eval()
-    model.to('cuda')
-    evalu(model, inputs, targets,ground_truth)
+    model.to(device)
+    evalu(model, inputs, targets,ground_truth, device)
 
 if __name__ == '__main__':
     main()
