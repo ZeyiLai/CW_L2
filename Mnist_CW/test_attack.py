@@ -1,7 +1,9 @@
 import numpy as np
 import torch
-
+from model import load_weights
 import matplotlib.pyplot as plt
+
+from model import MNISTModel
 from train import MNISTDataset
 from CarliniL2 import *
 
@@ -49,7 +51,7 @@ def predict(model, tensor):
         max_index = np.argmax(logits)  # 获取概率最大的类别索引
     return max_index
 
-def show(imgs, pert_imgs, ground_truth, predicts):
+def show(imgs, pert_imgs, ground_truth, predicts ,device):
     """
     显示原始图像和对抗样本，并比较其预测结果。
 
@@ -60,7 +62,7 @@ def show(imgs, pert_imgs, ground_truth, predicts):
     """
     modified = []
     for idx in range(len(imgs)):
-        modified.append(imgs[idx].to('cuda') - pert_imgs[idx].to('cuda'))
+        modified.append(imgs[idx].to(device) - pert_imgs[idx].to(device))
 
     # 设置图形大小和显示方式
     fig, axes = plt.subplots(len(imgs), 3, figsize=(12, len(imgs) * 4))  # 每行3张图片
@@ -93,7 +95,7 @@ def show(imgs, pert_imgs, ground_truth, predicts):
     plt.tight_layout()  # 自动调整布局避免重叠
     plt.show()
 
-def attacking(model, data, iters):
+def attacking(model, data, iters, device):
     """
     执行对抗攻击并收集成功攻击的样本。
 
@@ -111,10 +113,10 @@ def attacking(model, data, iters):
     # 遍历数据集，执行对抗攻击
     for idx in tqdm(range(iters), desc="Getting Ready", ncols=100):
 
-        if(predict(model, inputs[idx].to('cuda')) != ground_truth[idx]):
+        if(predict(model, inputs[idx].to(device)) != ground_truth[idx]):
             continue
         # 初始化CW L2攻击器
-        attacker = CWL2Attack(model, 'cuda', False, 1, 0, 1000, 0.01)
+        attacker = CWL2Attack(model, device, False, 1, 0, 10, 0.01)
 
         # 对当前输入图像执行攻击
         adv = attacker.attack(inputs[idx], ground_truth[idx], False)
@@ -122,13 +124,10 @@ def attacking(model, data, iters):
         result = predict(model, adv)
 
         if(result != ground_truth[idx]):
-            showed += 1
             imgs.append(inputs[idx])
             pert_imgs.append(adv)
             ground.append(ground_truth[idx])
             predicts.append(result)
-            if showed >= 10:    # 显示10个成功攻击样本后停止
-                break
         else:
             continue
 
@@ -139,11 +138,15 @@ def main():
     主函数，用于加载数据、模型并执行CW L2攻击。
     """
     data = MNISTDataset()  # 加载MNIST数据集
-    model = torch.load('./models/mnist.pth')  # 加载预训练模型
+    # model = torch.load('./models/mnist.pth')  # 加载预训练模型
+    # torch.save(model.state_dict(), './models/mnist_weight.pth')
+
+    model = load_weights(MNISTModel(), './models/mnist_weight.pth')
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.eval()
-    model.to('cuda')
-    imgs, pert_imgs, ground_truth, predicts = attacking(model, data, 5)  # 执行攻击
-    show(imgs, pert_imgs, ground_truth, predicts)  # 显示结果
+    model.to(device)
+    imgs, pert_imgs, ground_truth, predicts = attacking(model, data, 5, device)  # 执行攻击
+    show(imgs, pert_imgs, ground_truth, predicts, device)  # 显示结果
 
 if __name__ == '__main__':
     main()
