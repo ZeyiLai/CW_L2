@@ -9,18 +9,18 @@ from train import MNISTDataset
 
 def evalu(model, inputs, targets, ground_truth, device):
     model.eval()
-    total = len(ground_truth)
+    total = len(ground_truth)       #得到所有数据总数，inputs，targets，ground,truth第一个维度都是数据总数
     valid_mapping = np.ones((total,2))
     attacker = CWL2Attack(model, device, False, 1, 0, 100, 0.01)
     success = 0
     idx = 0
     its = 100
     with torch.no_grad():
-        for step in tqdm(range(len(ground_truth)), desc="Getting Ready", ncols=100):
+        for step in tqdm(range(len(ground_truth)), desc="Getting Ready", ncols=100): #获得所有攻击成功的数据mapping
             if predict(model,inputs[step].to(device)) != ground_truth[step]:
                 valid_mapping[step][0] = 0
                 valid_mapping[step][1] = 0
-    for step in tqdm(range(its), desc="Evaluating", ncols=100):
+    for step in tqdm(range(its), desc="Evaluating", ncols=100): #对mapping中有效的数据进行攻击
         if valid_mapping[idx][0] == 1:
             if predict(model, attacker.attack(inputs[idx], ground_truth[idx], False)) != ground_truth[idx]:
                 success+=1
