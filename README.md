@@ -1,3 +1,6 @@
+###这里可以下载带数据集的工程！！！
+https://github.com/ZeyiLai/CW_L2/releases/tag/v0.0.1
+
 # MNIST 卷积神经网络与 CW L2 对抗攻击
 
 本项目实现了一个用于 MNIST 数据集分类的卷积神经网络（CNN），并包括模型训练、评估，以及 Carlini & Wagner L2 对抗攻击方法。
